@@ -1,41 +1,30 @@
-### Deep learning project seed
-Use this seed to start new deep learning / ML projects.
-
-- Built in setup.py
-- Built in requirements
-- Examples with MNIST
-- Badges
-- Bibtex
-
-#### Goals  
-The goal of this seed is to structure ML paper-code the same so that work can easily be extended and replicated.   
-
-### DELETE EVERYTHING ABOVE FOR YOUR PROJECT  
- 
----
-
-<div align="center">    
- 
-# Your Project Name     
-
-[![Paper](http://img.shields.io/badge/paper-arxiv.1001.2234-B31B1B.svg)](https://www.nature.com/articles/nature14539)
-[![Conference](http://img.shields.io/badge/NeurIPS-2019-4b44ce.svg)](https://papers.nips.cc/book/advances-in-neural-information-processing-systems-31-2018)
-[![Conference](http://img.shields.io/badge/ICLR-2019-4b44ce.svg)](https://papers.nips.cc/book/advances-in-neural-information-processing-systems-31-2018)
-[![Conference](http://img.shields.io/badge/AnyConference-year-4b44ce.svg)](https://papers.nips.cc/book/advances-in-neural-information-processing-systems-31-2018)  
-<!--
-ARXIV   
-[![Paper](http://img.shields.io/badge/arxiv-math.co:1480.1111-B31B1B.svg)](https://www.nature.com/articles/nature14539)
--->
-![CI testing](https://github.com/PyTorchLightning/deep-learning-project-template/workflows/CI%20testing/badge.svg?branch=master&event=push)
-
-
-<!--  
-Conference   
--->   
-</div>
+ # Learning sentence representations from natural language inference data   
  
 ## Description   
-What it does   
+
+The first practical of the Advanced Topics in Computational Semantics course concerns learning
+general-purpose sentence representations in the natural language inference (NLI) task. The goal
+of this practical is threefold:
+• to implement four neural models to classify sentence pairs based on their relation;
+• to train these models using the Stanford Natural Language Inference (SNLI) corpus (Bowman
+et al., 2015);
+• and to evaluate the trained models using the SentEval framework (Conneau and Kiela, 2018).
+NLI is the task of classifying entailment or contradiction relationships between premises and
+hypotheses, such as the following:
+Premise Bob is in his room, but because of the thunder and lightning outside, he cannot sleep.
+Hypothesis 1 Bob is awake.
+Hypothesis 2 It is sunny outside.
+Hypothesis 3 Bob is lying in his bed.
+While the first hypothesis follows from the premise, indicated by the alignment of ‘cannot sleep’
+and ‘awake’, the second hypothesis contradicts the premise, as can be seen from the alignment of
+‘sunny’ and ‘thunder and lightning’ and recognizing their incompatibility. The third hypothesis is
+not necessarily entailed by the premise, and neither is contradicted. Therefore, its relation to the
+premise is considered to be neutral.
+For a model to recognize textual entailments, it has to reason about semantic relationships
+within sentences. Hence, a thorough understanding of natural language is required which can be
+transferred to other tasks involving natural language. In this assignment, we focus on pretraining
+a sentence encoder on NLI, and afterwards evaluate its sentence embeddings on a variety of natural
+language tasks.
 
 ## How to run   
 First, install dependencies   
