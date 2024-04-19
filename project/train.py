@@ -77,7 +77,6 @@ class NLI(pl.LightningModule):
 
     def forward(self, premise_ids, premise_len, hypothesis_ids, hypothesis_len):
         # in lightning, forward defines the prediction/inference actions
-        # print('premise_len', premise_len.size(), 'hypothesis_len', hypothesis_len.size())
         p_embed = self.encoder(premise_ids, premise_len)
         h_embed = self.encoder(hypothesis_ids, hypothesis_len)
         embed = torch.cat(
