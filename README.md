@@ -83,9 +83,12 @@ models
 ├── avg-epoch=19-val_loss=0.66-val_accuracy=0.72.ckpt
 ...
 ```
-## Pretrained models
+## Pretrained models + tensorboard log
 
 All the pretrained models are uploaded here https://drive.google.com/drive/folders/1Uw0TrcW3uCpcX5Hp9Vy5WeMWPv8k7GMY?usp=drive_link
+
+And all the logs are in https://drive.google.com/drive/folders/1Uw0TrcW3uCpcX5Hp9Vy5WeMWPv8k7GMY?usp=drive_link
+
 
 ## SentEval
 
