@@ -175,7 +175,7 @@ class NLI(pl.LightningModule):
         scheduler = ExponentialLR(optimizer, gamma=0.99)
         return [optimizer], [scheduler]
 
-def build_model(args, pretrained_embeddings, checkpt):
+def build_model(args, pretrained_embeddings):
     encoder = None
     if args.encoder == "avg":
         encoder = BaselineEncoder(pretrained_embeddings=pretrained_embeddings)
@@ -204,8 +204,8 @@ def build_model(args, pretrained_embeddings, checkpt):
             max_pool=True,
         )
         mlp_input_dim = LSTM_HIDDEN_DIM * 2
-    if checkpt:
-        return NLI.load_from_checkpoint(checkpt, enc=encoder, mlp_input_dim=mlp_input_dim, latent_dim=LATENT_DIM, n_classes=N_CLASSES)
+    if args.checkpt:
+        return NLI.load_from_checkpoint(args.checkpt, enc=encoder, mlp_input_dim=mlp_input_dim, latent_dim=LATENT_DIM, n_classes=N_CLASSES)
     return NLI(
         enc=encoder,
         mlp_input_dim=mlp_input_dim,
@@ -213,29 +213,7 @@ def build_model(args, pretrained_embeddings, checkpt):
         n_classes=N_CLASSES,
     )
 
-def cli_main():
-    pl.seed_everything(1234)
-
-    # ------------
-    # args
-    # ------------
-    parser = ArgumentParser()
-    parser.add_argument("--batch_size", default=64, type=int)
-    parser.add_argument("--senteval", action=argparse.BooleanOptionalAction)
-    parser.add_argument(
-        "--encoder",
-        default="avg",
-        choices=["avg", "lstm", "bi-lstm", "bi-lstm-max-pool"],
-        type=str,
-    )
-    parser.add_argument("--save_dir", default="./model", type=str)
-    parser.add_argument("--checkpt", type=str)
-    parser = pl.Trainer.add_argparse_args(parser)
-    args = parser.parse_args()
-
-    # ------------
-    # data
-    # ------------
+def build_vocab_embedding():
     train_ds, val_ds, test_ds = load_dataset(
         "stanfordnlp/snli", split=["train", "validation", "test"]
     )
@@ -272,6 +250,33 @@ def cli_main():
     )
     glove_vocab.set_default_index(0)
     pretrained_embeddings = glove_vectors.get_vecs_by_tokens([_UNK] + tokens_list)
+
+    return glove_vocab, pretrained_embeddings, train_ds, val_ds, test_ds
+
+def cli_main():
+    pl.seed_everything(1234)
+
+    # ------------
+    # args
+    # ------------
+    parser = ArgumentParser()
+    parser.add_argument("--batch_size", default=64, type=int)
+    parser.add_argument("--senteval", action=argparse.BooleanOptionalAction)
+    parser.add_argument(
+        "--encoder",
+        default="avg",
+        choices=["avg", "lstm", "bi-lstm", "bi-lstm-max-pool"],
+        type=str,
+    )
+    parser.add_argument("--save_dir", default="./model", type=str)
+    parser.add_argument("--checkpt", type=str)
+    parser = pl.Trainer.add_argparse_args(parser)
+    args = parser.parse_args()
+
+    # ------------
+    # data
+    # ------------
+    glove_vocab, pretrained_embeddings, train_ds, val_ds, test_ds = build_vocab_embedding()
 
     def collate_fn(batch):
         premise_tensors = []
@@ -318,14 +323,14 @@ def cli_main():
     # model
     # ------------
 
-    model = build_model(args, pretrained_embeddings, "")
+    model = build_model(args, pretrained_embeddings)
     # # ------------
     # # SentEval
     # # ------------
     if args.senteval:
         logging.basicConfig(format="%(asctime)s : %(message)s", level=logging.DEBUG)
         params = {'task_path': PATH_TO_DATA, 'usepytorch': True, 'kfold': 2}
-        params['infersent'] = build_model(args, pretrained_embeddings, args.checkpt).cuda()
+        params['infersent'] = build_model(args, pretrained_embeddings).cuda()
         se = senteval.SE(params, batcher, prepare)
         transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC', 'MRPC', 'SICKEntailment']
         results = se.eval(transfer_tasks)
