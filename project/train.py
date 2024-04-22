@@ -280,7 +280,7 @@ def cli_main():
     early_stop_callback = EarlyStopping(monitor="val_loss", mode="min", patience=3)
     checkpt_callback = ModelCheckpoint(
         dirpath=args.save_dir,
-        filename=f"{args.encoder}-" + "{epoch}-{val_loss:.2f}-{val_accuracy:.2f}-{test_accuracy:.2f}",
+        filename=f"{args.encoder}-" + "{epoch}-{val_loss:.2f}-{val_accuracy:.2f}",
         monitor="val_loss",
         mode="min",
         save_top_k=1,

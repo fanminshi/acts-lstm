@@ -30,10 +30,10 @@ language tasks.
 First, install dependencies   
 ```bash
 # clone project   
-git clone https://github.com/YourGithubName/deep-learning-project-template
+git clone https://github.com/fanminshi/acts-lstm
 
 # install project   
-cd deep-learning-project-template 
+cd acts-lstm
 pip install -e .   
 pip install -r requirements.txt
  ```   
@@ -42,37 +42,49 @@ pip install -r requirements.txt
 # module folder
 cd project
 
-# run module (example: mnist as your main contribution)   
-python lit_classifier_main.py    
+# train avg encoder and save the model to ./models directory
+python train.py --encoder=avg --save_dir="./models"   
 ```
 
-## Imports
-This project is setup as a package which means you can now easily import any file into any other file like so:
-```python
-from project.datasets.mnist import mnist
-from project.lit_classifier_main import LitClassifier
-from pytorch_lightning import Trainer
+## Train Models
 
-# model
-model = LitClassifier()
+We have 4 models to train mean embeddinng, LSTM, Bi-LSTM, and Bi-LSTM with Max pooling.
 
-# data
-train, val, test = mnist()
+![Encoders](./encoders.png)
 
-# train
-trainer = Trainer()
-trainer.fit(model, train, val)
 
-# test using the best model!
-trainer.test(test_dataloaders=test)
+
+Train 4 models with the follwing commands.
+
+```
+$ cd <project-root-folder>
+# Mean embedding
+$ python project/train.py --encoder=bi-lstm --batch-size=64 --save_dir='./models'
+
+# LSTM
+$ python project/train.py --encoder=lstm --batch-size=64 --save_dir='./models'
+
+# Bi-LSTM
+$ python project/train.py --encoder=bi-lstm --batch-size=64 --save_dir='./models'
+
+# Bi-LSTM with Max Pooling
+$ python project/train.py --encoder=bi-lstm --batch-size=64 --save_dir='./models'
 ```
 
-### Citation   
+You can view the saved check pts and tensorboard logging as the following
+
 ```
-@article{YourName,
-  title={Your Title},
-  author={Your team},
-  journal={Location},
-  year={Year}
-}
-```   
+$ tree models
+models
+├── avg # tensorboard logging for encoder avg
+│   └── version_0
+│       ├── events.out.tfevents.1713785131.fanmin-ml-rig.2717805.0
+│       ├── events.out.tfevents.1713785275.fanmin-ml-rig.2717805.1
+│       └── hparams.yaml
+|   # model check point for encoder avg. It contains useful info such as epoch, val loss, and val acc.
+├── avg-epoch=19-val_loss=0.66-val_accuracy=0.72.ckpt
+...
+```
+
+## SentEval
+TODO
