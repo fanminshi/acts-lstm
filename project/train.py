@@ -231,7 +231,7 @@ def cli_main():
         val_ds, collate_fn=collate_fn, batch_size=args.batch_size, num_workers=24
     )
     test_dl = DataLoader(
-        test_ds, collate_fn=collate_fn, batch_size=args.batch_size, num_workers=24
+        test_ds, collate_fn=collate_fn, batch_size=args.batch_size
     )
     # ------------
     # model
@@ -301,7 +301,6 @@ def cli_main():
     # # ------------
     # # testing
     # # ------------
-    trainer.test(model)
     trainer.test(model, dataloaders=test_dl)
 
 
