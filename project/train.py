@@ -15,6 +15,9 @@ from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from torchmetrics import Accuracy
 from lightning.pytorch.loggers import TensorBoardLogger
+import argparse
+from SentEval import senteval
+
 
 
 # Training parameters
@@ -23,7 +26,38 @@ LSTM_HIDDEN_DIM = 2048
 LATENT_DIM = 512
 N_CLASSES = 3
 _UNK = "<unk>"
+PATH_TO_DATA='./SentEval/data/'
 
+glove_vectors = GloVe(name="840B", dim=EMB_DIM)
+def prepare(params, samples):
+    unique_tokens = set()
+    for s in samples:
+        unique_tokens.update(s)
+    tokens_list = list(unique_tokens)
+    print("prepare uniq tokens", len(tokens_list))
+    tokens_list.sort()
+    glove_vocab = build_vocab_from_iterator(
+        [tokens_list], specials=[_UNK], special_first=True
+    )
+    glove_vocab.set_default_index(0)
+    pretrained_embeddings = glove_vectors.get_vecs_by_tokens([_UNK] + tokens_list)
+    params['glove_vocab'] = glove_vocab
+    params.infersent.encoder.embedding = nn.Embedding.from_pretrained(
+            pretrained_embeddings, freeze=True)
+
+
+def batcher(params, batch):
+    sentences = []
+    text_lengths = []
+    for s in batch:
+        s_indices = params['glove_vocab'].lookup_indices(s)
+        text_lengths.append(len(s))
+        sentences.append(torch.tensor(s_indices))
+
+    text = torch.tensor(text_lengths)
+    sen_pad = pad_sequence(sentences, batch_first=True)
+    embeddings = params.infersent.encoder(sen_pad, text)
+    return embeddings
 
 class BaselineEncoder(nn.Module):
     def __init__(self, pretrained_embeddings):
@@ -130,6 +164,43 @@ class NLI(pl.LightningModule):
         scheduler = ExponentialLR(optimizer, gamma=0.99)
         return [optimizer], [scheduler]
 
+def build_model(args, pretrained_embeddings, checkpt):
+    encoder = None
+    if args.encoder == "avg":
+        encoder = BaselineEncoder(pretrained_embeddings=pretrained_embeddings)
+        mlp_input_dim = EMB_DIM
+    if args.encoder == "lstm":
+        encoder = LSTMEncoder(
+            pretrained_embeddings=pretrained_embeddings,
+            input_dim=EMB_DIM,
+            latent_dim=LSTM_HIDDEN_DIM,
+        )
+        mlp_input_dim = LSTM_HIDDEN_DIM
+    if args.encoder == "bi-lstm":
+        encoder = LSTMEncoder(
+            pretrained_embeddings=pretrained_embeddings,
+            input_dim=EMB_DIM,
+            latent_dim=LSTM_HIDDEN_DIM,
+            bidirectional=True,
+        )
+        mlp_input_dim = LSTM_HIDDEN_DIM * 2
+    if args.encoder == "bi-lstm-max-pool":
+        encoder = LSTMEncoder(
+            pretrained_embeddings=pretrained_embeddings,
+            input_dim=EMB_DIM,
+            latent_dim=LSTM_HIDDEN_DIM,
+            bidirectional=True,
+            max_pool=True,
+        )
+        mlp_input_dim = LSTM_HIDDEN_DIM * 2
+    if checkpt:
+        return NLI.load_from_checkpoint(checkpt, enc=encoder, mlp_input_dim=mlp_input_dim, latent_dim=LATENT_DIM, n_classes=N_CLASSES)
+    return NLI(
+        enc=encoder,
+        mlp_input_dim=mlp_input_dim,
+        latent_dim=LATENT_DIM,
+        n_classes=N_CLASSES,
+    )
 
 def cli_main():
     pl.seed_everything(1234)
@@ -138,7 +209,8 @@ def cli_main():
     # args
     # ------------
     parser = ArgumentParser()
-    parser.add_argument("--batch_size", default=512, type=int)
+    parser.add_argument("--batch_size", default=64, type=int)
+    parser.add_argument("--senteval", action=argparse.BooleanOptionalAction)
     parser.add_argument(
         "--encoder",
         default="avg",
@@ -146,6 +218,7 @@ def cli_main():
         type=str,
     )
     parser.add_argument("--save_dir", default="./model", type=str)
+    parser.add_argument("--checkpt", type=str)
     parser = pl.Trainer.add_argparse_args(parser)
     args = parser.parse_args()
 
@@ -181,8 +254,6 @@ def cli_main():
     update_unique_tokens(val_ds)
     update_unique_tokens(test_ds)
     print("unique token len", len(unique_tokens))
-
-    glove_vectors = GloVe(name="840B", dim=EMB_DIM)
     tokens_list = list(unique_tokens)
     tokens_list.sort()
     glove_vocab = build_vocab_from_iterator(
@@ -213,7 +284,6 @@ def cli_main():
 
         premise_text = torch.tensor(premise_text_lengths)
         hypothesis_text = torch.tensor(hypothesis_text_lengths)
-        # print("premise_text_lengths",  premise_text.size(), "hypothesis_text_lengths", hypothesis_text.size())
         premise = pad_sequence(premise_tensors, batch_first=True)
         hypothesis = pad_sequence(hypothesis_tensors, batch_first=True)
         return (
@@ -237,40 +307,17 @@ def cli_main():
     # model
     # ------------
 
-    encoder = None
-    if args.encoder == "avg":
-        encoder = BaselineEncoder(pretrained_embeddings=pretrained_embeddings)
-        mlp_input_dim = EMB_DIM
-    if args.encoder == "lstm":
-        encoder = LSTMEncoder(
-            pretrained_embeddings=pretrained_embeddings,
-            input_dim=EMB_DIM,
-            latent_dim=LSTM_HIDDEN_DIM,
-        )
-        mlp_input_dim = LSTM_HIDDEN_DIM
-    if args.encoder == "bi-lstm":
-        encoder = LSTMEncoder(
-            pretrained_embeddings=pretrained_embeddings,
-            input_dim=EMB_DIM,
-            latent_dim=LSTM_HIDDEN_DIM,
-            bidirectional=True,
-        )
-        mlp_input_dim = LSTM_HIDDEN_DIM * 2
-    if args.encoder == "bi-lstm-max-pool":
-        encoder = LSTMEncoder(
-            pretrained_embeddings=pretrained_embeddings,
-            input_dim=EMB_DIM,
-            latent_dim=LSTM_HIDDEN_DIM,
-            bidirectional=True,
-            max_pool=True,
-        )
-        mlp_input_dim = LSTM_HIDDEN_DIM * 2
-    model = NLI(
-        enc=encoder,
-        mlp_input_dim=mlp_input_dim,
-        latent_dim=LATENT_DIM,
-        n_classes=N_CLASSES,
-    )
+    model = build_model(args, pretrained_embeddings, "")
+    # # ------------
+    # # SentEval
+    # # ------------
+    if args.senteval:
+        params = {'task_path': PATH_TO_DATA, 'usepytorch': True, 'kfold': 10}
+        params['infersent'] = build_model(args, pretrained_embeddings, args.checkpt)
+        se = senteval.SE(params, batcher, prepare)
+        transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC', 'MRPC', 'SICKEntailment', 'STS14']
+        results = se.eval(transfer_tasks)
+        print(results)
 
     # # ------------
     # # training

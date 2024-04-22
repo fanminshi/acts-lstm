@@ -6,3 +6,4 @@ nltk
 torchtext
 torchmetrics
 datasets==2.16.1
+scikit-learn>=0.18.0

@@ -52,8 +52,6 @@ We have 4 models to train mean embeddinng, LSTM, Bi-LSTM, and Bi-LSTM with Max p
 
 ![Encoders](./encoders.png)
 
-
-
 Train 4 models with the follwing commands.
 
 ```
