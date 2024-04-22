@@ -128,3 +128,6 @@ venv.bak/
 lightning_logs/
 MNIST
 .DS_Store
+
+# sentval data
+.SentEval/data

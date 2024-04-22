@@ -85,4 +85,27 @@ models
 ```
 
 ## SentEval
-TODO
+
+First, you need to install SentEval first.
+
+```
+$ pip install -e SentEval 
+```
+
+Second, you need to downlad the sentval dataset first.
+
+```
+$ cd atcs-lstm/SentEval/data/downstream
+$ ./get_transfer_data.bash
+```
+
+Then you can run sentval on trained model
+
+```
+python project/train.py --senteval --checkpt='<model>.ckpt' --encoder=<type>
+```
+
+
+## Run Experiments 
+
+The `atcs-lstm/run.ipynb` contains the code to train the model and run the senteval.

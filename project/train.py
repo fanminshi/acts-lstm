@@ -17,6 +17,12 @@ from torchmetrics import Accuracy
 from lightning.pytorch.loggers import TensorBoardLogger
 import argparse
 from SentEval import senteval
+import logging
+
+import inspect
+
+if not hasattr(inspect, 'getargspec'):
+    inspect.getargspec = inspect.getfullargspec
 
 
 
@@ -30,6 +36,7 @@ PATH_TO_DATA='./SentEval/data/'
 
 glove_vectors = GloVe(name="840B", dim=EMB_DIM)
 def prepare(params, samples):
+
     unique_tokens = set()
     for s in samples:
         unique_tokens.update(s)
@@ -43,21 +50,25 @@ def prepare(params, samples):
     pretrained_embeddings = glove_vectors.get_vecs_by_tokens([_UNK] + tokens_list)
     params['glove_vocab'] = glove_vocab
     params.infersent.encoder.embedding = nn.Embedding.from_pretrained(
-            pretrained_embeddings, freeze=True)
+            pretrained_embeddings, freeze=True).cuda()
 
 
 def batcher(params, batch):
     sentences = []
     text_lengths = []
     for s in batch:
+        if len(s) == 0:
+            s=['<unk>']
         s_indices = params['glove_vocab'].lookup_indices(s)
         text_lengths.append(len(s))
-        sentences.append(torch.tensor(s_indices))
+        sentences.append(torch.tensor(s_indices, dtype=torch.int32))
 
-    text = torch.tensor(text_lengths)
+    text = torch.tensor(text_lengths).cuda()
     sen_pad = pad_sequence(sentences, batch_first=True)
+    sen_pad = sen_pad.cuda()
     embeddings = params.infersent.encoder(sen_pad, text)
-    return embeddings
+    return embeddings.cpu().detach().numpy()
+
 
 class BaselineEncoder(nn.Module):
     def __init__(self, pretrained_embeddings):
@@ -312,12 +323,14 @@ def cli_main():
     # # SentEval
     # # ------------
     if args.senteval:
-        params = {'task_path': PATH_TO_DATA, 'usepytorch': True, 'kfold': 10}
-        params['infersent'] = build_model(args, pretrained_embeddings, args.checkpt)
+        logging.basicConfig(format="%(asctime)s : %(message)s", level=logging.DEBUG)
+        params = {'task_path': PATH_TO_DATA, 'usepytorch': True, 'kfold': 2}
+        params['infersent'] = build_model(args, pretrained_embeddings, args.checkpt).cuda()
         se = senteval.SE(params, batcher, prepare)
-        transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC', 'MRPC', 'SICKEntailment', 'STS14']
+        transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'TREC', 'MRPC', 'SICKEntailment']
         results = se.eval(transfer_tasks)
         print(results)
+        return
 
     # # ------------
     # # training
