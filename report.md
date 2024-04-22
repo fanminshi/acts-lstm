@@ -24,6 +24,10 @@ transferred to other tasks involving natural language. In this assignment, we fo
 a sentence encoder on NLI, and afterwards evaluate its sentence embeddings on a variety of natural
 language tasks.
 
+## All the code is at
+
+https://github.com/fanminshi/acts-lstm
+
 ## Data
 
 Table: Model Vs Accuracy
@@ -47,6 +51,10 @@ Table: Model Vs Sentval Tasks
 
 
 ## Analysis
+
+
+The trained model from table Model Vs Accuracy matches what's the the paper. We expect aht Avg performs the worse and BiLSTM-Max-Pooling performs the best.
+
 
 
 We compute the following sentiment in the analysis.ipynb

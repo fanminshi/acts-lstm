@@ -57,16 +57,16 @@ Train 4 models with the follwing commands.
 ```
 $ cd <project-root-folder>
 # Mean embedding
-$ python project/train.py --encoder=bi-lstm --batch-size=64 --save_dir='./models'
+$ python train.py --encoder=bi-lstm --batch-size=64 --save_dir='./models'
 
 # LSTM
-$ python project/train.py --encoder=lstm --batch-size=64 --save_dir='./models'
+$ python train.py --encoder=lstm --batch-size=64 --save_dir='./models'
 
 # Bi-LSTM
-$ python project/train.py --encoder=bi-lstm --batch-size=64 --save_dir='./models'
+$ python train.py --encoder=bi-lstm --batch-size=64 --save_dir='./models'
 
 # Bi-LSTM with Max Pooling
-$ python project/train.py --encoder=bi-lstm --batch-size=64 --save_dir='./models'
+$ python train.py --encoder=bi-lstm --batch-size=64 --save_dir='./models'
 ```
 
 You can view the saved check pts and tensorboard logging as the following
@@ -108,7 +108,7 @@ $ ./get_transfer_data.bash
 Then you can run sentval on trained model
 
 ```
-python project/train.py --senteval --checkpt='<model>.ckpt' --encoder=<type>
+python train.py --senteval --checkpt='<model>.ckpt' --encoder=<type>
 ```
 
 
